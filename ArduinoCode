@@ -1,0 +1,50 @@
+#include <DHT11.h>
+#include <SoftwareSerial.h>
+ 
+#define DHT_PIN      9
+#define FAN_PIN      7
+ 
+#define SEND_INTERVAL 2000
+ 
+DHT11 dht(DHT_PIN);
+ 
+unsigned long lastSendTime = 0;
+ 
+void setup() {
+  Serial.begin(9600);
+ 
+  pinMode(FAN_PIN, OUTPUT);
+  digitalWrite(FAN_PIN, LOW);
+ 
+  Serial.println("ClimaSync Arduino iniciado");
+}
+ 
+void loop() {
+  if (Serial.available()) {
+    char command = Serial.read();
+    if (command == '1') {
+      digitalWrite(FAN_PIN, HIGH);
+      Serial.println("Ventilador: ON");
+    } else if (command == '0') {
+      digitalWrite(FAN_PIN, LOW);
+      Serial.println("Ventilador: OFF");
+    }
+  }
+ 
+  unsigned long now = millis();
+  if (now - lastSendTime >= SEND_INTERVAL) {
+    lastSendTime = now;
+ 
+    int temperature = 0;
+    int humidity = 0;
+    int result = dht.readTemperatureHumidity(temperature, humidity);
+ 
+    if (result != 0) {
+      Serial.println("Error DHT11: " + DHT11::getErrorString(result));
+      return;
+    }
+ 
+    String data = "T:" + String(temperature) + ",H:" + String(humidity);
+    Serial.println(data);
+  }
+}
